@@ -1,5 +1,5 @@
 """
-WSGI config for messeneger project.
+WSGI config for messenger project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
