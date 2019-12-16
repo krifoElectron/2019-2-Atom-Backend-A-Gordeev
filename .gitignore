@@ -1,7 +1,9 @@
-2019-2-Atom-Backend_env/
+env
 *.pyc
 *.swo
 *.swp
 *.vscode
 pytest.py
 db.sqlite3
+.idea
+.vscode
