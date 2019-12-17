@@ -1,7 +1,10 @@
 from django.http import JsonResponse
 from django.http import HttpResponseNotAllowed
+import time
+import traceback
 
 from chats.models import Chat
+from chats.models import Message
 from members.models import Member
 from user_profile.models import User
 
@@ -9,7 +12,7 @@ from user_profile.models import User
 def chat_list(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
-    user_id = request.GET.get('user_id')
+    user_id = int(request.GET.get('user_id'))
 
     required_user = User.objects.get(id=user_id)
 
@@ -19,21 +22,89 @@ def chat_list(request):
 
     for member in required_members:
         chat = member.chat
+        members = Member.objects.filter(chat=chat)
+        name = ''
+        if members[0].user.id != user_id:
+            name = members[0].user.first_name
+        else:
+            name = members[1].user.first_name
+
         chats.append({'title': chat.title,
-                      'is_group_chat': chat.is_group_chat,
-                      'last_message': chat.is_group_chat})
+                      'isGroupChat': chat.is_group_chat,
+                      'lastMessage': chat.last_message.text if chat.last_message else '',
+                      'date': chat.last_message.added_at if chat.last_message else '',
+                      'chatId': chat.id,
+                      'name': name})
 
     return JsonResponse({'chats': chats})
-
-    # return JsonResponse({"chats": {"0": {"recipient": "b", "last_message": "sdf", "date": "2019-10-22T21:50:02.492Z", "isRead": True}}})
 
 
 def chat_page(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
-    # chat_id = request.GET.get('chat_id')
+    chat_id = request.GET.get('chat_id')
+    chat = Chat.objects.get(id=chat_id)
 
-    return JsonResponse({1: [{"sender": "a", "recipient": "b", "text": "sdf", "date": "2019-10-22T21:50:02.492Z", "isRead": True}, {"sender": "a", "recipient": "b", "text": "asdf", "date": "2019-10-22T21:50:02.869Z"}, {"sender": "a", "recipient": "b", "text": "asd", "date": "2019-10-22T21:50:03.113Z"}, {"sender": "a", "recipient": "b", "text": "asdf", "date": "2019-10-22T21:50:03.401Z"}, {"sender": "a", "recipient": "b", "text": "asdf", "date": "2019-10-22T21:50:03.603Z"}, {"sender": "a", "recipient": "b", "text": "sdf", "date": "2019-10-22T21:50:03.834Z"}, {"sender": "a", "recipient": "b", "text": "asdf", "date": "2019-10-22T21:50:04.084Z"}, {"sender": "a", "recipient": "b", "text": "asdf", "date": "2019-10-22T21:50:04.478Z"}, {"sender": "a", "recipient": "b", "text": "f", "date": "2019-10-22T21:50:10.294Z"}, {"sender": "a", "recipient": "b", "text": "asdffsadf", "date": "2019-10-28T12:14:16.806Z"}]})
+    message_objects = Message.objects.filter(chat=chat)
+
+    messages = []
+    for msg_obj in message_objects:
+        messages.append({'text': msg_obj.text,
+                         'added_at': msg_obj.added_at,
+                         'sender_id': msg_obj.user.id,
+                         'id': msg_obj.id})
+
+    response = {'title': chat.title, 'messages': messages}
+
+    return JsonResponse(response)
+
+
+def send_message(request):
+    response = {'result': ''}
+    try:
+        user_id = request.GET.get('user_id')
+        chat_id = request.GET.get('chat_id')
+        text = request.GET.get('text')
+        # added_at = request.GET.get('added_at')
+        added_at = time.time()
+
+        user = User.objects.get(id=user_id)
+        chat = Chat.objects.get(id=chat_id)
+
+        # member = Member.objects.filter(chat=chat)
+
+        message = Message(text=text, added_at=added_at, user=user, chat=chat)
+        message.save()
+
+        chat.last_message = message
+        chat.save()
+    except Exception as e:
+        response['result'] = traceback.format_exc()
+    else:
+        response['result'] = 'ok'
+
+    return JsonResponse(response)
+
+
+def read_message(request):
+    response = {'result': ''}
+    try:
+        user_id = request.GET.get('user_id')
+        chat_id = request.GET.get('chat_id')
+        message_id = request.GET.get('message_id')
+
+        message = Message.objects.get(id=message_id)
+
+        member = Member.objects.get(user=user_id, chat=chat_id)
+        member.last_read_message = message
+        member.save()
+
+    except Exception as e:
+        response['result'] = traceback.format_exc()
+    else:
+        response['result'] = 'ok'
+
+    return JsonResponse(response)
 
 
 def create_chat(is_group, user_id, second_user_id):
@@ -54,7 +125,29 @@ def get_chat_list(user_id):
     return chats
 
 
+def get_member(request):
+    response = {'result': ''}
+    try:
+        user_id = request.GET.get('user_id')
+
+        members = Member.objects.filter(user=user_id)
+
+        mems = []
+        for member in members:
+            mems.append({'chat_id': member.chat.id,
+                         'last_msg': member.last_read_message.text if member.last_read_message else 'none'})
+        response['members'] = mems
+
+    except Exception as e:
+        response['result'] = traceback.format_exc()
+    else:
+        response['result'] = 'ok'
+
+    return JsonResponse(response)
+
 # заполнение БД
+
+
 def create_user(name, last_name, username):
     u = User(first_name=name, last_name=last_name, username=username)
     u.save()

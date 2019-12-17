@@ -43,7 +43,10 @@ def search_user(request):
 def contacts(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
-    return JsonResponse({'id': 1, 'contacts': [2, 5, 7]})
+
+    user_id = request.GET.get('user_id')
+
+    return JsonResponse({'id': user_id, 'contacts': [2, 5, 7]})
 
 
 def get_user_by_any(request):
