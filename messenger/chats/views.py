@@ -2,11 +2,14 @@ from django.http import JsonResponse
 from django.http import HttpResponseNotAllowed
 import time
 import traceback
+import json
 
 from chats.models import Chat
 from chats.models import Message
 from members.models import Member
 from user_profile.models import User
+
+from .forms import MessageForm
 
 
 def chat_list(request):
@@ -75,18 +78,39 @@ def get_chat_list(user_id):
 
 
 def send_message_post(request):
-    response = {}
-    try:
-        user_id = request.GET.get('user_id')
-        chat_id = request.GET.get('chat_id')
-        text = request.GET.get('text')
+    if request.method == 'POST':
+        
 
-        response = send_message(user_id, chat_id, text)
+        
+        # return JsonResponse({'user_id': user_id})
 
-    except Exception as e:
-        response['result'] = traceback.format_exc()
+        response = {}
+        try:
+            form_data = json.loads(request.body)
 
-    return JsonResponse(response)
+            form = MessageForm(form_data)
+            if form.is_valid():
+                user_id = form_data['user_id']
+                chat_id = form_data['chat_id']
+                text = form_data['text']
+            else:
+                print('invalid')
+            # user_id = request.POST.get('user_id')
+            # chat_id = request.POST.get('chat_id')
+            # text = request.POST.get('text')
+            # body = request.POST.get('body')
+
+            print(user_id, chat_id, text)
+
+            response = send_message(user_id, chat_id, text)
+
+        except Exception as e:
+            response['result'] = traceback.format_exc()
+
+        return JsonResponse(response)
+
+    else:
+        return JsonResponse({'answer': 'No!'})
 
 
 def send_message(user_id, chat_id, text):
@@ -96,8 +120,8 @@ def send_message(user_id, chat_id, text):
         # added_at = request.GET.get('added_at')
         added_at = time.time()
 
-        user = User.objects.get(id=user_id)
-        chat = Chat.objects.get(id=chat_id)
+        user = User.objects.get(id=int(user_id))
+        chat = Chat.objects.get(id=int(chat_id))
 
         # member = Member.objects.filter(chat=chat)
 
@@ -133,7 +157,6 @@ def read_message(request):
         response['result'] = 'ok'
 
     return JsonResponse(response)
-
 
 
 def get_member(request):
