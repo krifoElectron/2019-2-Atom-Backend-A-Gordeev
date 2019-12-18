@@ -15,15 +15,15 @@ def profile(request):
 
     responce_object = {}
 
-    responce_object['id'] = required_user.id
+    responce_object['userId'] = required_user.id
     responce_object['email'] = required_user.email
     responce_object['about'] = required_user.about
     responce_object['birthday'] = required_user.birthday
-    responce_object['date_joined'] = required_user.date_joined
-    responce_object['first_name'] = required_user.first_name
-    responce_object['is_active'] = required_user.is_active
-    responce_object['last_login'] = required_user.last_login
-    responce_object['last_name'] = required_user.last_name
+    responce_object['dateJoined'] = required_user.date_joined
+    responce_object['firstName'] = required_user.first_name
+    responce_object['isActive'] = required_user.is_active
+    responce_object['lastLogin'] = required_user.last_login
+    responce_object['lastName'] = required_user.last_name
     responce_object['location'] = required_user.location
     responce_object['username'] = required_user.username
     responce_object['avatar'] = required_user.avatar

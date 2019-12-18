@@ -22,6 +22,7 @@ def chat_list(request):
 
     for member in required_members:
         chat = member.chat
+        print(member.user_id, 'id')
         members = Member.objects.filter(chat=chat)
         name = ''
         if members[0].user.id != user_id:
@@ -43,28 +44,55 @@ def chat_page(request):
     if request.method != "GET":
         return HttpResponseNotAllowed(["GET"])
     chat_id = request.GET.get('chat_id')
+    user_id = request.GET.get('user_id')
     chat = Chat.objects.get(id=chat_id)
+
+    members = Member.objects.filter(chat=chat)
+    name = ''
+    if members[0].user.id != user_id:
+        name = members[0].user.first_name
+    else:
+        name = members[1].user.first_name
 
     message_objects = Message.objects.filter(chat=chat)
 
     messages = []
     for msg_obj in message_objects:
         messages.append({'text': msg_obj.text,
-                         'added_at': msg_obj.added_at,
-                         'sender_id': msg_obj.user.id,
-                         'id': msg_obj.id})
+                         'addedAt': msg_obj.added_at,
+                         'senderId': msg_obj.user.id,
+                         'messageId': msg_obj.id})
 
-    response = {'title': chat.title, 'messages': messages}
+    response = {'interlocutor': name, 'messages': messages}
 
     return JsonResponse(response)
 
 
-def send_message(request):
-    response = {'result': ''}
+def get_chat_list(user_id):
+    members = Member.objects.filter(user=user_id)
+    chats = [member.chat for member in members]
+    return chats
+
+
+def send_message_post(request):
+    response = {}
     try:
         user_id = request.GET.get('user_id')
         chat_id = request.GET.get('chat_id')
         text = request.GET.get('text')
+
+        response = send_message(user_id, chat_id, text)
+
+    except Exception as e:
+        response['result'] = traceback.format_exc()
+
+    return JsonResponse(response)
+
+
+def send_message(user_id, chat_id, text):
+    response = {'result': ''}
+    try:
+        
         # added_at = request.GET.get('added_at')
         added_at = time.time()
 
@@ -82,8 +110,8 @@ def send_message(request):
         response['result'] = traceback.format_exc()
     else:
         response['result'] = 'ok'
-
-    return JsonResponse(response)
+    
+    return response
 
 
 def read_message(request):
@@ -107,23 +135,6 @@ def read_message(request):
     return JsonResponse(response)
 
 
-def create_chat(is_group, user_id, second_user_id):
-    chat = Chat(title='aa', is_group_chat=is_group)
-    chat.save()
-    first_member = Member(user=User.objects.get(
-        pk=user_id), chat=chat)
-    second_member = Member(user=User.objects.get(
-        pk=second_user_id), chat=chat)
-
-    first_member.save()
-    second_member.save()
-
-
-def get_chat_list(user_id):
-    members = Member.objects.filter(user=user_id)
-    chats = [member.chat for member in members]
-    return chats
-
 
 def get_member(request):
     response = {'result': ''}
@@ -145,6 +156,19 @@ def get_member(request):
 
     return JsonResponse(response)
 
+
+def create_chat(is_group, user_id, second_user_id):
+    chat = Chat(title='aa', is_group_chat=is_group)
+    chat.save()
+    first_member = Member(user=User.objects.get(
+        pk=user_id), chat=chat)
+    second_member = Member(user=User.objects.get(
+        pk=second_user_id), chat=chat)
+
+    first_member.save()
+    second_member.save()
+
+
 # заполнение БД
 
 
@@ -165,3 +189,13 @@ def create_fake_info():
     create_chat(False, user_ids[0], user_ids[1])
     create_chat(False, user_ids[2], user_ids[3])
     create_chat(False, user_ids[0], user_ids[2])
+
+    send_message(1, 1, 'ghbdtn')
+    send_message(2, 1, 'привет')
+
+    send_message(3, 2, 'ок')
+    send_message(4, 2, 'чё')
+    send_message(4, 2, 'ничё')
+
+    send_message(1, 3, 'фыва')
+    send_message(3, 3, 'прол')
