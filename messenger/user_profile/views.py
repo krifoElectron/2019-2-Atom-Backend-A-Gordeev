@@ -10,23 +10,15 @@ def profile(request):
         return HttpResponseNotAllowed(["GET"])
 
     user_id = request.GET.get('user_id')
+    if user_id is None:
+        return JsonResponse({'result': 'user invalid'}, status=400)
 
-    required_user = User.objects.get(id=user_id)
+    try:
+        required_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'result': 'user not found'}, status=404)
 
-    responce_object = {}
-
-    responce_object['userId'] = required_user.id
-    responce_object['email'] = required_user.email
-    responce_object['about'] = required_user.about
-    responce_object['birthday'] = required_user.birthday
-    responce_object['dateJoined'] = required_user.date_joined
-    responce_object['firstName'] = required_user.first_name
-    responce_object['isActive'] = required_user.is_active
-    responce_object['lastLogin'] = required_user.last_login
-    responce_object['lastName'] = required_user.last_name
-    responce_object['location'] = required_user.location
-    responce_object['username'] = required_user.username
-    responce_object['avatar'] = required_user.avatar
+    responce_object = required_user.to_dict()
 
     return JsonResponse(responce_object)
 
@@ -54,23 +46,5 @@ def get_user_by_any(request):
 
     required_users = User.objects.filter(Q(first_name__contains=word) | Q(
         last_name__contains=word) | Q(username__contains=word))
-    responce_object = {'users': []}
 
-    i = 0
-    for user in required_users:
-        responce_object['users'].append({})
-        responce_object['users'][i]['id'] = user.id
-        responce_object['users'][i]['email'] = user.email
-        responce_object['users'][i]['about'] = user.about
-        responce_object['users'][i]['birthday'] = user.birthday
-        responce_object['users'][i]['date_joined'] = user.date_joined
-        responce_object['users'][i]['first_name'] = user.first_name
-        responce_object['users'][i]['is_active'] = user.is_active
-        responce_object['users'][i]['last_login'] = user.last_login
-        responce_object['users'][i]['last_name'] = user.last_name
-        responce_object['users'][i]['location'] = user.location
-        responce_object['users'][i]['username'] = user.username
-        responce_object['users'][i]['avatar'] = user.avatar
-        i += 1
-
-    return JsonResponse(responce_object)
+    return JsonResponse({'users': [user.to_dict() for user in required_users]})
