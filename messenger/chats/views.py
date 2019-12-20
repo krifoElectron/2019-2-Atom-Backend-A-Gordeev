@@ -26,12 +26,20 @@ def chat_list(request):
     for member in required_members:
         chat = member.chat
         print(member.user_id, 'id')
-        members = Member.objects.filter(chat=chat)
+        members = Member.objects.filter(chat=chat.id)
         name = ''
+        # print([x.user.id for x in members])
+        # print(members[0].user.pk, members[0].user.first_name, members[1].user.pk, members[1].user.first_name, user_id, len(members))
+        # print(members[0].user.pk, members[1].user.pk, user_id, len(members))
+        # print(members[0].user.first_name, members[1].user.first_name, user_id, len(members))
+        print(members[0].user.last_name, members[1].user.last_name, user_id, len(members))
+
         if members[0].user.id != user_id:
             name = members[0].user.first_name
+            print(11)
         else:
             name = members[1].user.first_name
+            print(22)
 
         chats.append({'title': chat.title,
                       'isGroupChat': chat.is_group_chat,
@@ -61,10 +69,12 @@ def chat_page(request):
 
     messages = []
     for msg_obj in message_objects:
+        print(user_id, msg_obj.user.id)
         messages.append({'text': msg_obj.text,
                          'addedAt': msg_obj.added_at,
                          'senderId': msg_obj.user.id,
-                         'messageId': msg_obj.id})
+                         'messageId': msg_obj.id,
+                         'toMe': int(user_id) != msg_obj.user.id})
 
     response = {'interlocutor': name, 'messages': messages}
 
